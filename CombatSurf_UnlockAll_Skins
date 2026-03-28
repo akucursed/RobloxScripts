@@ -15,26 +15,17 @@ local aku = getconnections(add.OnClientEvent)
 local bruh = localplrinvent.getInv()
 
 local nigger = {Primary = nil, Secondary = nil, Knife = nil}
-local pId = plr:GetAttribute("Primary")
-local sId = plr:GetAttribute("Secondary")
-local kId = plr:GetAttribute("Knife")
+local configName = "aku_skinchanger.json"
+local savedSkins = {Primary = "", Secondary = "", Knife = ""}
 
-if pId and bruh[pId] and not string.find(pId, "HACK_") then nigger.Primary = bruh[pId] end
-if sId and bruh[sId] and not string.find(sId, "HACK_") then nigger.Secondary = bruh[sId] end
-if kId and bruh[kId] and not string.find(kId, "HACK_") then nigger.Knife = bruh[kId] end
-
-local queue = {}
-for subItemName, data in pairs(Skinchiki.SubItem) do
-    table.insert(queue, {subItemName, data.Base or subItemName, subItemName})
+if isfile and isfile(configName) then
+    local success, decoded = pcall(function()
+        return https:JSONDecode(readfile(configName))
+    end)
+    if success and type(decoded) == "table" then
+        savedSkins = decoded
+    end
 end
-for baseItemName, data in pairs(Skinchiki.BaseItems) do
-    table.insert(queue, {baseItemName, baseItemName, nil})
-end
-
-local total = #queue
-local current = 0
-
-print("Getting " .. total .. " skins in total...")
 
 local function fuckall(itemName, baseName, subType)
     local serial = "HACK_"..itemName
@@ -56,6 +47,47 @@ local function fuckall(itemName, baseName, subType)
     end
 end
 
+local function loadSaved()
+    for slot, serial in pairs(savedSkins) do
+        if serial and serial ~= "" then
+            local itemName = string.gsub(serial, "^HACK_", "")
+            if Skinchiki.SubItem[itemName] then
+                fuckall(itemName, Skinchiki.SubItem[itemName].Base or itemName, itemName)
+            elseif Skinchiki.BaseItems[itemName] then
+                fuckall(itemName, itemName, nil)
+            end
+            
+            if bruh[serial] then
+                nigger[slot] = bruh[serial]
+                plr:SetAttribute(slot, serial)
+            end
+        end
+    end
+end
+
+loadSaved()
+
+local pId = plr:GetAttribute("Primary")
+local sId = plr:GetAttribute("Secondary")
+local kId = plr:GetAttribute("Knife")
+
+if pId and bruh[pId] and not string.find(pId, "HACK_") then nigger.Primary = bruh[pId] end
+if sId and bruh[sId] and not string.find(sId, "HACK_") then nigger.Secondary = bruh[sId] end
+if kId and bruh[kId] and not string.find(kId, "HACK_") then nigger.Knife = bruh[kId] end
+
+local queue = {}
+for subItemName, data in pairs(Skinchiki.SubItem) do
+    table.insert(queue, {subItemName, data.Base or subItemName, subItemName})
+end
+for baseItemName, data in pairs(Skinchiki.BaseItems) do
+    table.insert(queue, {baseItemName, baseItemName, nil})
+end
+
+local total = #queue
+local current = 0
+
+print("Getting " .. total .. " skins in total...")
+
 local loop
 loop = rs.Heartbeat:Connect(function()
     for i = 1, 10 do
@@ -69,21 +101,6 @@ loop = rs.Heartbeat:Connect(function()
         fuckall(data[1], data[2], data[3])
     end
 end)
-
-local configName = "aku_skinchanger.json"
-local savedSkins = {Primary = "", Secondary = "", Knife = ""}
-
-if isfile and isfile(configName) then
-    local success, decoded = pcall(function()
-        return https:JSONDecode(readfile(configName))
-    end)
-    if success and type(decoded) == "table" then
-        savedSkins = decoded
-        if savedSkins.Primary and savedSkins.Primary ~= "" then plr:SetAttribute("Primary", savedSkins.Primary) end
-        if savedSkins.Secondary and savedSkins.Secondary ~= "" then plr:SetAttribute("Secondary", savedSkins.Secondary) end
-        if savedSkins.Knife and savedSkins.Knife ~= "" then plr:SetAttribute("Knife", savedSkins.Knife) end
-    end
-end
 
 local function saveConfig()
     local curr = {
