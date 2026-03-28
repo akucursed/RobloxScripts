@@ -1,4 +1,5 @@
-rps = game:GetService("ReplicatedStorage")
+local plr = game:GetService("Players").LocalPlayer
+local rps = game:GetService("ReplicatedStorage")
 local localplrinvent = require(rps:WaitForChild("ClientInventory"))
 local Skinchiki = require(rps:WaitForChild("BaseItems"))
 local itemmodul = require(rps:WaitForChild("Item")).Item
@@ -6,8 +7,18 @@ local Cevents = rps:WaitForChild("Client-Events")
 local add = Cevents:WaitForChild("AddButton")
 local aku = getconnections(add.OnClientEvent)
 local bruh = localplrinvent.getInv()
+
+local nigger = {Primary = nil, Secondary = nil, Knife = nil}
+local pId = plr:GetAttribute("Primary")
+local sId = plr:GetAttribute("Secondary")
+local kId = plr:GetAttribute("Knife")
+
+if pId and bruh[pId] then nigger.Primary = bruh[pId] end
+if sId and bruh[sId] then nigger.Secondary = bruh[sId] end
+if kId and bruh[kId] then nigger.Knife = bruh[kId] end
+
 local function fuckall(itemName, baseName, subType)
-    local serial = itemName
+    local serial = "HACK_"..itemName
     if bruh[serial] then return end
     local customItem = itemmodul.new(
         itemName:gsub("_", " "),
@@ -23,4 +34,31 @@ local function fuckall(itemName, baseName, subType)
     for _, connection in ipairs(aku) do connection.Function(customItem, true) end
 end
 for subItemName, data in pairs(Skinchiki.SubItem) do fuckall(subItemName, data.Base or subItemName, subItemName) end
-for baseItemName, data in pairs(Skinchiki.Skinchiki) do fuckall(baseItemName, baseItemName, nil) end
+for baseItemName, data in pairs(Skinchiki.BaseItems) do fuckall(baseItemName, baseItemName, nil) end
+
+local old
+old = hookmetamethod(game, "__namecall", function(self, ...)
+    local m = getnamecallmethod()
+    local args = {...}
+    if m == "InvokeServer" and self.Name == "SwitchWpns" then
+        local data = args[1]
+        if type(data) == "table" and data.Base then
+            local bData = Skinchiki.BaseItems[data.Base]
+            if bData and bData.Slot and nigger[bData.Slot] then
+                args[1] = nigger[bData.Slot]
+            end
+        end
+        return old(self, unpack(args))
+    end
+    if m == "FireServer" and self.Name == "Shoot" then
+        local data = args[7]
+        if type(data) == "table" and data.Base then
+            local bData = Skinchiki.BaseItems[data.Base]
+            if bData and bData.Slot and nigger[bData.Slot] then
+                args[7] = nigger[bData.Slot]
+            end
+        end
+        return old(self, unpack(args))
+    end
+    return old(self, ...)
+end)
