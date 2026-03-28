@@ -1,5 +1,10 @@
+--[[
+    Skinchanger made by aku_cursed on discord also it have auto skin equip and its saves to config so you dont needa to reequip on evenry inject
+    skids, enjoy!
+]]--
 local plr = game:GetService("Players").LocalPlayer
 local rps = game:GetService("ReplicatedStorage")
+local https = game:GetService("HttpService")
 local localplrinvent = require(rps:WaitForChild("ClientInventory"))
 local Skinchiki = require(rps:WaitForChild("BaseItems"))
 local itemmodul = require(rps:WaitForChild("Item")).Item
@@ -13,9 +18,9 @@ local pId = plr:GetAttribute("Primary")
 local sId = plr:GetAttribute("Secondary")
 local kId = plr:GetAttribute("Knife")
 
-if pId and bruh[pId] then nigger.Primary = bruh[pId] end
-if sId and bruh[sId] then nigger.Secondary = bruh[sId] end
-if kId and bruh[kId] then nigger.Knife = bruh[kId] end
+if pId and bruh[pId] and not string.find(pId, "HACK_") then nigger.Primary = bruh[pId] end
+if sId and bruh[sId] and not string.find(sId, "HACK_") then nigger.Secondary = bruh[sId] end
+if kId and bruh[kId] and not string.find(kId, "HACK_") then nigger.Knife = bruh[kId] end
 
 local function fuckall(itemName, baseName, subType)
     local serial = "HACK_"..itemName
@@ -30,16 +35,56 @@ local function fuckall(itemName, baseName, subType)
         true,
         1337,
         serial
-    ) localplrinvent.AddItem(customItem)
-    for _, connection in ipairs(aku) do connection.Function(customItem, true) end
+    )
+    localplrinvent.AddItem(customItem)
+    for _, connection in ipairs(aku) do
+        connection.Function(customItem, true)
+    end
 end
-for subItemName, data in pairs(Skinchiki.SubItem) do fuckall(subItemName, data.Base or subItemName, subItemName) end
-for baseItemName, data in pairs(Skinchiki.BaseItems) do fuckall(baseItemName, baseItemName, nil) end
+
+for subItemName, data in pairs(Skinchiki.SubItem) do
+    fuckall(subItemName, data.Base or subItemName, subItemName)
+end
+
+for baseItemName, data in pairs(Skinchiki.BaseItems) do
+    fuckall(baseItemName, baseItemName, nil)
+end
+
+local configName = "aku_skinchanger.json"
+local savedSkins = {Primary = "", Secondary = "", Knife = ""}
+
+if isfile and isfile(configName) then
+    local success, decoded = pcall(function()
+        return https:JSONDecode(readfile(configName))
+    end)
+    if success and type(decoded) == "table" then
+        savedSkins = decoded
+        if savedSkins.Primary and savedSkins.Primary ~= "" then plr:SetAttribute("Primary", savedSkins.Primary) end
+        if savedSkins.Secondary and savedSkins.Secondary ~= "" then plr:SetAttribute("Secondary", savedSkins.Secondary) end
+        if savedSkins.Knife and savedSkins.Knife ~= "" then plr:SetAttribute("Knife", savedSkins.Knife) end
+    end
+end
+
+local function saveConfig()
+    local current = {
+        Primary = plr:GetAttribute("Primary") or "",
+        Secondary = plr:GetAttribute("Secondary") or "",
+        Knife = plr:GetAttribute("Knife") or ""
+    }
+    if writefile then
+        writefile(configName, https:JSONEncode(current))
+    end
+end
+
+plr:GetAttributeChangedSignal("Primary"):Connect(saveConfig)
+plr:GetAttributeChangedSignal("Secondary"):Connect(saveConfig)
+plr:GetAttributeChangedSignal("Knife"):Connect(saveConfig)
 
 local old
 old = hookmetamethod(game, "__namecall", function(self, ...)
     local m = getnamecallmethod()
     local args = {...}
+    
     if m == "InvokeServer" and self.Name == "SwitchWpns" then
         local data = args[1]
         if type(data) == "table" and data.Base then
@@ -50,6 +95,7 @@ old = hookmetamethod(game, "__namecall", function(self, ...)
         end
         return old(self, unpack(args))
     end
+    
     if m == "FireServer" and self.Name == "Shoot" then
         local data = args[7]
         if type(data) == "table" and data.Base then
@@ -60,5 +106,15 @@ old = hookmetamethod(game, "__namecall", function(self, ...)
         end
         return old(self, unpack(args))
     end
+
+    if m == "InvokeServer" and self.Name == "ChangeLoadout" then
+        local slot = args[1]
+        local itemData = args[2]
+        if type(itemData) == "table" and itemData.Serial and string.find(itemData.Serial, "HACK_") then
+            plr:SetAttribute(slot, itemData.Serial)
+            return true
+        end
+    end
+    
     return old(self, ...)
 end)
