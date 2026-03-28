@@ -1,0 +1,26 @@
+rps = game:GetService("ReplicatedStorage")
+local localplrinvent = require(rps:WaitForChild("ClientInventory"))
+local Skinchiki = require(rps:WaitForChild("BaseItems"))
+local itemmodul = require(rps:WaitForChild("Item")).Item
+local Cevents = rps:WaitForChild("Client-Events")
+local add = Cevents:WaitForChild("AddButton")
+local aku = getconnections(add.OnClientEvent)
+local bruh = localplrinvent.getInv()
+local function fuckall(itemName, baseName, subType)
+    local serial = itemName
+    if bruh[serial] then return end
+    local customItem = itemmodul.new(
+        itemName:gsub("_", " "),
+        baseName,
+        subType,
+        math.random(1, 1000),
+        nil,
+        nil,
+        true,
+        1337,
+        serial
+    ) localplrinvent.AddItem(customItem)
+    for _, connection in ipairs(aku) do connection.Function(customItem, true) end
+end
+for subItemName, data in pairs(Skinchiki.SubItem) do fuckall(subItemName, data.Base or subItemName, subItemName) end
+for baseItemName, data in pairs(Skinchiki.Skinchiki) do fuckall(baseItemName, baseItemName, nil) end
