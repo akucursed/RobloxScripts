@@ -16,13 +16,7 @@ local add = Cevents:WaitForChild("AddButton")
 local aku = getconnections(add.OnClientEvent)
 local bruh = localplrinvent.getInv()
 
-if type(gameInfo) == "table" then
-    pcall(function()
-        setreadonly(gameInfo, false)
-        gameInfo.TradingServerID = game.PlaceId
-        setreadonly(gameInfo, true)
-    end)
-end
+local origTradeID = gameInfo.TradingServerID
 
 local nigger = {Primary = nil, Secondary = nil, Knife = nil}
 
@@ -69,6 +63,24 @@ local function fuckall(itemName, baseName, subType)
     end
 end
 
+local function spoofSet(slot, serial)
+    pcall(function()
+        setreadonly(gameInfo, false)
+        gameInfo.TradingServerID = game.PlaceId
+        setreadonly(gameInfo, true)
+    end)
+    
+    plr:SetAttribute(slot, serial)
+    
+    task.delay(0.5, function()
+        pcall(function()
+            setreadonly(gameInfo, false)
+            gameInfo.TradingServerID = origTradeID
+            setreadonly(gameInfo, true)
+        end)
+    end)
+end
+
 local function loadSaved()
     if isfile and isfile(configName) then
         local success, decoded = pcall(function() return https:JSONDecode(readfile(configName)) end)
@@ -81,7 +93,7 @@ local function loadSaved()
                         fuckall(serial, serial, nil)
                     end
                     if bruh[serial] then
-                        plr:SetAttribute(slot, serial)
+                        spoofSet(slot, serial)
                     end
                 end
             end
@@ -160,6 +172,7 @@ old = hookmetamethod(game, "__namecall", function(self, ...)
     if m == "InvokeServer" and self.Name == "ChangeLoadout" then
         local itemData = args[2]
         if type(itemData) == "table" and itemData.Serial and (Skinchiki.SubItem[itemData.Serial] or Skinchiki.BaseItems[itemData.Serial]) then
+            spoofSet(args[1], itemData.Serial)
             return true
         end
     end
