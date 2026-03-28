@@ -5,6 +5,7 @@
 local plr = game:GetService("Players").LocalPlayer
 local rps = game:GetService("ReplicatedStorage")
 local https = game:GetService("HttpService")
+local rs = game:GetService("RunService")
 local localplrinvent = require(rps:WaitForChild("ClientInventory"))
 local Skinchiki = require(rps:WaitForChild("BaseItems"))
 local itemmodul = require(rps:WaitForChild("Item")).Item
@@ -22,6 +23,19 @@ if pId and bruh[pId] and not string.find(pId, "HACK_") then nigger.Primary = bru
 if sId and bruh[sId] and not string.find(sId, "HACK_") then nigger.Secondary = bruh[sId] end
 if kId and bruh[kId] and not string.find(kId, "HACK_") then nigger.Knife = bruh[kId] end
 
+local queue = {}
+for subItemName, data in pairs(Skinchiki.SubItem) do
+    table.insert(queue, {subItemName, data.Base or subItemName, subItemName})
+end
+for baseItemName, data in pairs(Skinchiki.BaseItems) do
+    table.insert(queue, {baseItemName, baseItemName, nil})
+end
+
+local total = #queue
+local current = 0
+
+print("Getting " .. total .. " skins in total...")
+
 local function fuckall(itemName, baseName, subType)
     local serial = "HACK_"..itemName
     if bruh[serial] then return end
@@ -32,8 +46,8 @@ local function fuckall(itemName, baseName, subType)
         math.random(1, 1000),
         nil,
         nil,
-        true,
-        1337,
+        false,
+        0,
         serial
     )
     localplrinvent.AddItem(customItem)
@@ -42,13 +56,19 @@ local function fuckall(itemName, baseName, subType)
     end
 end
 
-for subItemName, data in pairs(Skinchiki.SubItem) do
-    fuckall(subItemName, data.Base or subItemName, subItemName)
-end
-
-for baseItemName, data in pairs(Skinchiki.BaseItems) do
-    fuckall(baseItemName, baseItemName, nil)
-end
+local loop
+loop = rs.Heartbeat:Connect(function()
+    for i = 1, 10 do
+        if current >= total then
+            loop:Disconnect()
+            print("All skins loaded!")
+            return
+        end
+        current = current + 1
+        local data = queue[current]
+        fuckall(data[1], data[2], data[3])
+    end
+end)
 
 local configName = "aku_skinchanger.json"
 local savedSkins = {Primary = "", Secondary = "", Knife = ""}
@@ -66,13 +86,13 @@ if isfile and isfile(configName) then
 end
 
 local function saveConfig()
-    local current = {
+    local curr = {
         Primary = plr:GetAttribute("Primary") or "",
         Secondary = plr:GetAttribute("Secondary") or "",
         Knife = plr:GetAttribute("Knife") or ""
     }
     if writefile then
-        writefile(configName, https:JSONEncode(current))
+        writefile(configName, https:JSONEncode(curr))
     end
 end
 
