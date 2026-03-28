@@ -1,6 +1,7 @@
 --[[
     Skinchanger made by aku_cursed on discord also it have auto skin equip and its saves to config so you dont needa to reequip on evenry inject
     skids, enjoy!
+    Also it bypasses afk check so you can change ur skins in any time you want
 ]]--
 local plr = game:GetService("Players").LocalPlayer
 local rps = game:GetService("ReplicatedStorage")
@@ -9,15 +10,24 @@ local rs = game:GetService("RunService")
 local localplrinvent = require(rps:WaitForChild("ClientInventory"))
 local Skinchiki = require(rps:WaitForChild("BaseItems"))
 local itemmodul = require(rps:WaitForChild("Item")).Item
+local gameInfo = require(rps:WaitForChild("GameInfo"))
 local Cevents = rps:WaitForChild("Client-Events")
 local add = Cevents:WaitForChild("AddButton")
 local aku = getconnections(add.OnClientEvent)
 local bruh = localplrinvent.getInv()
 
+if type(gameInfo) == "table" then
+    pcall(function()
+        setreadonly(gameInfo, false)
+        gameInfo.TradingServerID = game.PlaceId
+        setreadonly(gameInfo, true)
+    end)
+end
+
 local nigger = {Primary = nil, Secondary = nil, Knife = nil}
 
 for id, data in pairs(bruh) do
-    if type(data) == "table" and data.Base and not string.find(id, "HACK_") then
+    if type(data) == "table" and data.Base and not Skinchiki.SubItem[id] and not Skinchiki.BaseItems[id] then
         local bData = Skinchiki.BaseItems[data.Base]
         if bData and bData.Slot then
             if bData.Slot == "Primary" and not nigger.Primary then nigger.Primary = data end
@@ -31,16 +41,16 @@ local pId = plr:GetAttribute("Primary")
 local sId = plr:GetAttribute("Secondary")
 local kId = plr:GetAttribute("Knife")
 
-if pId and bruh[pId] and not string.find(pId, "HACK_") then nigger.Primary = bruh[pId] end
-if sId and bruh[sId] and not string.find(sId, "HACK_") then nigger.Secondary = bruh[sId] end
-if kId and bruh[kId] and not string.find(kId, "HACK_") then nigger.Knife = bruh[kId] end
+if pId and bruh[pId] and not Skinchiki.SubItem[pId] and not Skinchiki.BaseItems[pId] then nigger.Primary = bruh[pId] end
+if sId and bruh[sId] and not Skinchiki.SubItem[sId] and not Skinchiki.BaseItems[sId] then nigger.Secondary = bruh[sId] end
+if kId and bruh[kId] and not Skinchiki.SubItem[kId] and not Skinchiki.BaseItems[kId] then nigger.Knife = bruh[kId] end
 
 local configName = "aku_skinchanger.json"
-local savedSkins = {Primary = "", Secondary = "", Knife = ""}
 
 local function fuckall(itemName, baseName, subType)
-    local serial = "HACK_"..itemName
+    local serial = itemName
     if bruh[serial] then return end
+    
     local customItem = itemmodul.new(
         itemName:gsub("_", " "),
         baseName,
@@ -52,6 +62,7 @@ local function fuckall(itemName, baseName, subType)
         0,
         serial
     )
+    
     localplrinvent.AddItem(customItem)
     for _, connection in ipairs(aku) do
         connection.Function(customItem, true)
@@ -62,14 +73,12 @@ local function loadSaved()
     if isfile and isfile(configName) then
         local success, decoded = pcall(function() return https:JSONDecode(readfile(configName)) end)
         if success and type(decoded) == "table" then
-            savedSkins = decoded
-            for slot, serial in pairs(savedSkins) do
+            for slot, serial in pairs(decoded) do
                 if serial and serial ~= "" then
-                    local itemName = string.gsub(serial, "^HACK_", "")
-                    if Skinchiki.SubItem[itemName] then
-                        fuckall(itemName, Skinchiki.SubItem[itemName].Base or itemName, itemName)
-                    elseif Skinchiki.BaseItems[itemName] then
-                        fuckall(itemName, itemName, nil)
+                    if Skinchiki.SubItem[serial] then
+                        fuckall(serial, Skinchiki.SubItem[serial].Base or serial, serial)
+                    elseif Skinchiki.BaseItems[serial] then
+                        fuckall(serial, serial, nil)
                     end
                     if bruh[serial] then
                         plr:SetAttribute(slot, serial)
@@ -93,14 +102,11 @@ end
 local total = #queue
 local current = 0
 
-print("Getting " .. total .. " skins in total...")
-
 local loop
 loop = rs.Heartbeat:Connect(function()
     for i = 1, 10 do
         if current >= total then
             loop:Disconnect()
-            print("All skins loaded!")
             return
         end
         current = current + 1
@@ -115,7 +121,9 @@ local function saveConfig()
         Secondary = plr:GetAttribute("Secondary") or "",
         Knife = plr:GetAttribute("Knife") or ""
     }
-    if writefile then writefile(configName, https:JSONEncode(curr)) end
+    if writefile then 
+        writefile(configName, https:JSONEncode(curr)) 
+    end
 end
 
 plr:GetAttributeChangedSignal("Primary"):Connect(saveConfig)
@@ -150,10 +158,8 @@ old = hookmetamethod(game, "__namecall", function(self, ...)
     end
 
     if m == "InvokeServer" and self.Name == "ChangeLoadout" then
-        local slot = args[1]
         local itemData = args[2]
-        if type(itemData) == "table" and itemData.Serial and string.find(itemData.Serial, "HACK_") then
-            plr:SetAttribute(slot, itemData.Serial)
+        if type(itemData) == "table" and itemData.Serial and (Skinchiki.SubItem[itemData.Serial] or Skinchiki.BaseItems[itemData.Serial]) then
             return true
         end
     end
